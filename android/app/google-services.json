@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "878313621640",
+    "project_id": "fir-database-92cb5",
+    "storage_bucket": "fir-database-92cb5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:878313621640:android:517a7eb8d890b8cdc1b73d",
+        "android_client_info": {
+          "package_name": "com.kdu"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCGzP2QrxZWpAMYXBtWVAgyV0SvEDWyUeA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
