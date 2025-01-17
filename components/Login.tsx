@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator } from 'react-native';
 import { firebase_auth } from '../firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import {LogLevel,OneSignal} from 'react-native-onesignal';
 
 declare var alert: (message?: any) => void;
 
@@ -12,18 +13,22 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const auth = firebase_auth;
 
+  
   const signIn = async () => {
     setLoading(true);
     try {
       const response = await signInWithEmailAndPassword(auth, email, password);
-      console.log(response);
+      console.log('Sign in response:', response);
+  
+  
     } catch (error: any) {
-      console.log(error);
+      console.error(error);
       alert('Sign in failed: ' + error.message);
-    }finally{
+    } finally {
       setLoading(false);
     }
   };
+  
 
   const signUp = async () => {
     setLoading(true);
