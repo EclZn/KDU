@@ -2,17 +2,25 @@ import React from 'react';
 import { View, Text, Button, TouchableOpacity,StyleSheet,Alert} from 'react-native';
 import { firebase_auth } from '../firebase';
 import { ONESIGNAL_API_KEY, ONESIGNAL_APP_ID } from '@env' ;
-
+import { OneSignal } from 'react-native-onesignal';
 const Home = ({navigation}: any) => {
   const sendNotification = async () => {
     const apiKey = ONESIGNAL_API_KEY; // Replace with the OneSignal API Key
     const appId = ONESIGNAL_APP_ID; // Replace with the OneSignal App ID, not Device OneSignal App ID
+
+    // Sets an external id for the users device, then sends notification with include_aliases targeting the external id, include_segments targeting a segment list of users.
+    let externalId= "1001";
+    OneSignal.login(externalId);
     
     const notificationData = {
       target_channel: "push",
-      included_segments: ["Total Subscriptions"],
+     // included_segments: ["TestSegment"],
+      include_aliases: {
+        "external_id": [
+          "1001",
+        ]
+      },
       app_id: appId,
-      external_id: "", //Must be External ID on the log
       contents: {
         en: "Hello, world",
       },

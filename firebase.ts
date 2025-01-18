@@ -1,6 +1,8 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, initializeAuth, getReactNativePersistence} from "firebase/auth";
+import ReactNativeAsyncStorage from "@react-native-async-storage/async-storage";
+
 
 const firebaseConfig = {
   apiKey: "AIzaSyAN20qV_rZbomBZDRWbCTvN7pEQWvL7SxY",
@@ -16,5 +18,5 @@ const firebaseConfig = {
 //3efebd88-04a7-45f7-86c6-3a77be735726 OneSignal app-Id
 export const  firebase_app = initializeApp(firebaseConfig);
 
-export const  firebase_auth = getAuth(firebase_app);
+export const  firebase_auth = initializeAuth(firebase_app, {persistence : getReactNativePersistence(ReactNativeAsyncStorage)});
 

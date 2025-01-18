@@ -3,7 +3,8 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@env": ["node_modules/react-native-dotenv"]
+      "@env": ["node_modules/react-native-dotenv"],
+      "@firebase/auth" : ["node_modules/@firebase/auth/dist/index.rn.d.ts"],
     },
     "esModuleInterop": true,
     "skipLibCheck": true
