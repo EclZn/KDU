@@ -1,17 +1,18 @@
 import React from 'react';
 import { View, Text, Button, TouchableOpacity,StyleSheet,Alert} from 'react-native';
 import { firebase_auth } from '../firebase';
-
+import { ONESIGNAL_API_KEY, ONESIGNAL_APP_ID } from '@env' ;
 
 const Home = ({navigation}: any) => {
   const sendNotification = async () => {
-    const apiKey = "os_v2_app_hh77muxqxrg43itekc2utycfk7ctv7374etun4fvmas567hxrj2yyrlbepcqnfxxe6ltunbvujrr7j2uqkp5mdpa2zzjvhgq66mawdi"; // Replace with your OneSignal API Key
-    const appId = "39fff652-f0bc-4dcd-a264-50b549e04557"; // Replace with your OneSignal App ID
-
+    const apiKey = ONESIGNAL_API_KEY; // Replace with the OneSignal API Key
+    const appId = ONESIGNAL_APP_ID; // Replace with the OneSignal App ID, not Device OneSignal App ID
+    
     const notificationData = {
       target_channel: "push",
       included_segments: ["Total Subscriptions"],
       app_id: appId,
+      external_id: "", //Must be External ID on the log
       contents: {
         en: "Hello, world",
       },
