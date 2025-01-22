@@ -3,9 +3,11 @@ import { View, Text, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator 
 import { firebase_auth } from '../firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { db } from '../firebase';
+import { ref, set } from 'firebase/database';
+import { OneSignal } from 'react-native-onesignal';
 
 declare var alert: (message?: any) => void;
-
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -13,9 +15,20 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
-
   const auth = firebase_auth;
-  
+
+  const saveUserToDatabase = async (userEmail: string) => {
+    try {
+      const userRef = ref(db, `users/${auth.currentUser?.uid}`);
+      await set(userRef, {
+        email: userEmail,
+        uid: auth.currentUser?.uid,
+      });
+    } catch (error) {
+      console.error("Failed to save user to database:", error);
+    }
+  };
+
   const signIn = async () => {
     setLoading(true);
     try {
@@ -25,10 +38,16 @@ const Login = () => {
       if (rememberMe) {
         await AsyncStorage.setItem('email', email);
         await AsyncStorage.setItem('password', password);
-      }else{
+      } else {
         await AsyncStorage.removeItem('email');
         await AsyncStorage.removeItem('password');
       }
+      
+      OneSignal.login(email);
+
+      // Save user to the database
+      await saveUserToDatabase(email);
+
     } catch (error: any) {
       console.error(error);
       alert('Sign in failed: ' + error.message);
@@ -36,7 +55,6 @@ const Login = () => {
       setLoading(false);
     }
   };
-  
 
   const signUp = async () => {
     setLoading(true);
@@ -47,7 +65,7 @@ const Login = () => {
     } catch (error: any) {
       console.log(error);
       alert('Sign up failed: ' + error.message);
-    }finally{
+    } finally {
       setLoading(false);
     }
   };
@@ -71,53 +89,51 @@ const Login = () => {
       }
     };
     loadEmail();
-
-    const unsubscribe = auth.onAuthStateChanged(user => {
-      
-    });
-    return unsubscribe;
   }, []);
 
   return (
     <View style={styles.container}>
-      <TextInput style={styles.input} 
-      placeholder="Email" 
-      placeholderTextColor="#888"
-      autoCapitalize='none' 
-      value={email} 
-      onChangeText={(text)=>setEmail(text)} />
+      <TextInput
+        style={styles.input}
+        placeholder="Email"
+        placeholderTextColor="#888"
+        autoCapitalize="none"
+        value={email}
+        onChangeText={(text) => setEmail(text)}
+      />
 
-      <TextInput 
-      style={styles.input} 
-      placeholder="Password" 
-      placeholderTextColor="#888"
-      secureTextEntry ={true}
-      value={password}
-      onChangeText={(text)=>setPassword(text)}
+      <TextInput
+        style={styles.input}
+        placeholder="Password"
+        placeholderTextColor="#888"
+        secureTextEntry={true}
+        value={password}
+        onChangeText={(text) => setPassword(text)}
       />
 
       {loading ? (
-      <ActivityIndicator size="large" color="#007BFF" /> 
+        <ActivityIndicator size="large" color="#007BFF" />
       ) : (
-      <>
-      <TouchableOpacity style={styles.button} onPress={signIn}>
-      <Text style={styles.buttonText}>Login</Text>
-      </TouchableOpacity>
+        <>
+          <TouchableOpacity style={styles.button} onPress={signIn}>
+            <Text style={styles.buttonText}>Login</Text>
+          </TouchableOpacity>
 
-      <TouchableOpacity style={styles.button} onPress={signUp}>
-      <Text style={styles.buttonText}>Sign Up</Text>
-      </TouchableOpacity>
-      </>
+          <TouchableOpacity style={styles.button} onPress={signUp}>
+            <Text style={styles.buttonText}>Sign Up</Text>
+          </TouchableOpacity>
+        </>
       )}
+
       <View style={styles.rememberMeContainer}>
         <TouchableOpacity onPress={toggleRememberMe} style={styles.rememberMeButton}>
-        <Text style={[styles.rememberMeText, rememberMe && styles.buttonTextActive]}>
-          {rememberMe ? "☒" : "☐"}
-        </Text>
+          <Text style={[styles.rememberMeText, rememberMe && styles.buttonTextActive]}>
+            {rememberMe ? "☒" : "☐"}
+          </Text>
         </TouchableOpacity>
         <Text style={styles.rememberMeText}>Remember Me</Text>
-        </View>
       </View>
+    </View>
   );
 };
 
@@ -135,7 +151,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 10,
     paddingHorizontal: 10,
-    color: '#000', 
+    color: '#000',
   },
   text: {
     fontSize: 18,
@@ -165,10 +181,8 @@ const styles = StyleSheet.create({
   rememberMeText: {
     fontSize: 15,
     marginRight: 5,
-    
   },
   buttonTextActive: {
     color: 'green',
   },
-  
 });

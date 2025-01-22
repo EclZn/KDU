@@ -1,78 +1,131 @@
-import React from 'react';
-import { View, Text, Button, TouchableOpacity,StyleSheet,Alert} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, Modal, TextInput, FlatList } from 'react-native';
 import { firebase_auth } from '../firebase';
-import { ONESIGNAL_API_KEY, ONESIGNAL_APP_ID } from '@env' ;
-import { OneSignal } from 'react-native-onesignal';
-const Home = ({navigation}: any) => {
-  const sendNotification = async () => {
-    const apiKey = ONESIGNAL_API_KEY; // Replace with the OneSignal API Key
-    const appId = ONESIGNAL_APP_ID; // Replace with the OneSignal App ID, not Device OneSignal App ID
+import { db } from '../firebase';
+import { ref, push, onValue } from 'firebase/database';
 
-    // Sets an external id for the users device, then sends notification with include_aliases targeting the external id, include_segments targeting a segment list of users.
-    let externalId= "1001";
-    OneSignal.login(externalId);
-    
-    const notificationData = {
-      target_channel: "push",
-     // included_segments: ["TestSegment"],
-      include_aliases: {
-        "external_id": [
-          "1001",
-        ]
-      },
-      app_id: appId,
-      contents: {
-        en: "Hello, world",
-      },
+interface Task {
+  id: string;
+  title: string;
+  body: string;
+  createdBy: string;
+  assignedTo: string;
+  dateTime: string;
+}
 
-    };
-    try {
-      const response = await fetch("https://api.onesignal.com/notifications", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Key ${apiKey}`,
-        },
-        body: JSON.stringify(notificationData),
-      });
+const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
+  const [modalVisible, setModalVisible] = useState(false);
+  const [taskTitle, setTaskTitle] = useState('');
+  const [tasks, setTasks] = useState<Task[]>([]);
 
-      if (response.ok) {
-        const responseData = await response.json();
-        Alert.alert("Success", "Notification sent successfully!");
-        console.log(responseData);
-      } else {
-        Alert.alert("Error", `Failed to send notification: ${response.status}`);
-        console.error(await response.text());
-      }
-    } catch (error: unknown) {
-      // Type guard for error
-      if (error instanceof Error) {
-        Alert.alert("Error", `An error occurred: ${error.message}`);
-        console.error(error.message);
-      } else {
-        Alert.alert("Error", "An unknown error occurred");
-        console.error("Unknown error:", error);
+  useEffect(() => {
+    const tasksRef = ref(db, 'tasks');
+    const unsubscribe = onValue(tasksRef, (snapshot) => {
+      const data = snapshot.val();
+      const taskList: Task[] = data
+        ? Object.keys(data).map((key) => ({
+            id: key,
+            ...data[key],
+          }))
+        : [];
+      setTasks(taskList);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const addTask = async () => {
+    if (taskTitle.trim() === '') {
+      Alert.alert('Error', 'Task title cannot be empty.');
+      return;
     }
-  }
+
+    try {
+      const tasksRef = ref(db, 'tasks');
+      await push(tasksRef, {
+        title: taskTitle,
+        body: "Default body", // Placeholder for task body
+        createdBy: "Creator Name", // Replace with actual user data
+        assignedTo: "Unassigned", // Placeholder for assigned user
+        dateTime: new Date().toLocaleString(),
+      });
+      Alert.alert('Success', 'Task added successfully!');
+      setTaskTitle('');
+      setModalVisible(false);
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Error', 'Failed to add task.');
+    }
+  };
+
+  const renderItem = ({ item }: { item: Task }) => {
+    return (
+      <View style={styles.taskItem}>
+        <View style={styles.taskContainer}>
+          <Text style={styles.taskTitle}>{item.title}</Text>
+        </View>
+        <View style={styles.line} />
+        <View>
+          <Text style={styles.taskBody}>{item.body}</Text>
+        </View>
+        <View>
+          <Text style={styles.taskTimestamp}>Creator ● {item.createdBy}</Text>
+          <Text style={styles.taskTimestamp}>Assigned to ● {item.assignedTo}</Text>
+          <View style={styles.assignedToContainer}>
+            <Text style={styles.taskTimestamp}>{item.dateTime}</Text>
+          </View>
+        </View>
+      </View>
+    );
   };
 
   return (
     <View style={styles.container}>
-      <Text>List</Text>
-      <TouchableOpacity style={styles.button} onPress={()=> navigation.navigate('Settings')} >
-        <Text style={styles.buttonText}>Open Settings</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.button} onPress={()=> firebase_auth.signOut()}>
-        <Text style={styles.buttonText}>Log out</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.button} onPress={sendNotification}>
-        <Text style={styles.buttonText}>Send Notification</Text>
-      </TouchableOpacity>
-    </View>
-  )
-}
+      <Text style={styles.text}>Task List</Text>
 
-export default Home
+      <TouchableOpacity style={styles.button} onPress={() => setModalVisible(true)}>
+        <Text style={styles.buttonText}>Add Task</Text>
+      </TouchableOpacity>
+
+      <FlatList
+        data={tasks}
+        keyExtractor={(item) => item.id}
+        renderItem={renderItem}
+        contentContainerStyle={styles.listContainer}
+      />
+
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.text}>Add Task</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Enter task title"
+              value={taskTitle}
+              onChangeText={setTaskTitle}
+            />
+            <TouchableOpacity style={styles.button} onPress={addTask}>
+              <Text style={styles.buttonText}>Add Task</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.button, styles.cancelButton]}
+              onPress={() => setModalVisible(false)}
+            >
+              <Text style={styles.buttonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+};
+
+export default Home;
 
 const styles = StyleSheet.create({
   container: {
@@ -100,5 +153,56 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: 16,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    elevation: 5,
+  },
+  cancelButton: {
+    backgroundColor: '#FF6347',
+  },
+  listContainer: {
+    marginTop: 20,
+  },
+  taskItem: {
+    padding: 15,
+    marginVertical: 5,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 5,
+  },
+  taskContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  taskTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  line: {
+    height: 1,
+    backgroundColor: '#ccc',
+    marginVertical: 5,
+  },
+  taskBody: {
+    fontSize: 14,
+    color: '#555',
+  },
+  taskTimestamp: {
+    fontSize: 12,
+    color: '#888',
+  },
+  assignedToContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
 });
