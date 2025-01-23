@@ -83,7 +83,7 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
       setAssignedTo('');
       setModalVisible(false);
   
-      sendNotification(assignedTo);
+      sendNotification(assignedTo,taskTitle);
     } catch (error) {
       console.error(error);
       Alert.alert('Error', 'Failed to add task.');
@@ -121,13 +121,14 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
       await update(taskRef, { title: taskTitle, body: taskBody, assignedTo: assignedTo });
       Alert.alert('Success', 'Task updated successfully!');
       setTaskModalVisible(false);
+      sendNotification(assignedTo,taskTitle);
     } catch (error) {
       console.error(error);
       Alert.alert('Error', 'Failed to update task.');
     }
   };
 
-  const sendNotification = async (receiver: string) => {
+  const sendNotification = async (receiver: string, taskTitle:string) => {
       const apiKey = ONESIGNAL_API_KEY; // Replace with the OneSignal API Key
       const appId = ONESIGNAL_APP_ID; // Replace with the OneSignal App ID, not Device OneSignal App ID
   
@@ -144,7 +145,7 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
         },
           app_id: appId,
           contents: {
-            en: "Hello, world",
+            en: taskTitle,
           },
     
         };
@@ -297,6 +298,8 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
             onPress={() => setAssignedTo(item)} // Set the selected email as the assigned user
           >
             <Text style={styles.userEmail}>{item}</Text>
+                  <View style={styles.line} />
+
           </TouchableOpacity>
         )}
       />
@@ -311,52 +314,75 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
 
 
         {/* Task Actions Modal */}
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={taskModalVisible}
-        onRequestClose={() => {
+        <Modal
+  animationType="fade"
+  transparent={true}
+  visible={taskModalVisible}
+  onRequestClose={() => {
+    setTaskModalVisible(false);
+    setTaskTitle('');
+    setTaskBody('');
+  }}      
+>
+  <View style={styles.modalContainer}>
+    <View style={styles.modalContent}>
+      <TouchableOpacity
+        style={styles.closeButton}
+        onPress={() => {
           setTaskModalVisible(false);
           setTaskTitle('');
           setTaskBody('');
-          
-        }}      
+          setAssignedTo('');
+        }}
+        hitSlop={{ top: 10, bottom: 50, left: 50, right: 10 }}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-              <TouchableOpacity style={styles.closeButton} onPress={() => {
-          setTaskModalVisible(false);
-          setTaskTitle('');
-          setTaskBody('');}}
-          hitSlop={{ top: 10, bottom: 50, left: 50, right: 10 }}
+        <Text style={styles.closeButtonText}>X</Text>
+      </TouchableOpacity>
+
+      <Text style={styles.text}>Edit task title</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Edit task title"
+        value={taskTitle}
+        onChangeText={setTaskTitle}
+      />
+      <Text style={styles.text}>Edit task body</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Edit task body"
+        value={taskBody}
+        onChangeText={setTaskBody}
+      />
+
+      {/* Add the user selection part in Edit Modal */}
+      <Text style={styles.text}>Select User</Text>
+      <FlatList
+        data={users}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.userItem}
+            onPress={() => setAssignedTo(item)} // Set the selected email as the assigned user
           >
-                <Text style={styles.closeButtonText}>X</Text>
-              </TouchableOpacity>
-              <Text></Text>
-            <Text style={styles.text}>Edit task title</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Edit task title"
-              value={taskTitle}
-              onChangeText={setTaskTitle}
-            />
-            <Text style={styles.text}>Edit task body</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Edit task body"
-              value={taskBody}
-              onChangeText={setTaskBody}
-            />
-            <TouchableOpacity style={styles.button} onPress={editTask}>
-              <Text style={styles.buttonText}>Save Changes</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={deleteTask}>
-              <Text style={styles.buttonText}>Delete Task</Text>
-            </TouchableOpacity>
-           
-          </View>
-        </View>
-      </Modal>
+            <Text style={styles.userEmail}>{item}</Text>
+            <View style={styles.line} />
+          </TouchableOpacity>
+        )}
+      />
+      <Text style={styles.text}>Selected: {assignedTo}</Text>
+
+      <TouchableOpacity style={styles.button} onPress={editTask}>
+        <Text style={styles.buttonText}>Save Changes</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.button, styles.cancelButton]}
+        onPress={deleteTask}
+      >
+        <Text style={styles.buttonText}>Delete Task</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
 
     </View>
   );
@@ -460,10 +486,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#FF6347',
   },
   userItem: {
-    padding: 10,
-    backgroundColor: '#f1f1f1',
-    marginVertical: 5,
-    borderRadius: 5,
+    padding: 3,
+    marginVertical: 3,
   },
   userEmail: {
     fontSize: 14,

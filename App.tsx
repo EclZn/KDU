@@ -10,7 +10,6 @@ import Blank from './components/Blank';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { firebase_auth } from './firebase';
 import { LogLevel, OneSignal } from 'react-native-onesignal';
-
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
 
