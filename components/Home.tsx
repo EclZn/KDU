@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, Modal, TextInput, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, Modal, TextInput, FlatList,Image } from 'react-native';
 import { firebase_auth } from '../firebase';
 import { db } from '../firebase';
 import { ref, push, onValue, update, remove } from 'firebase/database';
@@ -12,6 +12,7 @@ interface Task {
   createdBy: string;
   assignedTo: string;
   dateTime: string;
+  statusImage: string;
 }
 
 const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
@@ -37,7 +38,7 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
             ...data[key],
           }))
         : [];
-      setTasks(taskList);
+        setTasks(taskList.reverse());
     });
     const usersRef = ref(db, `users/`);
     const unsubscribeUsers = onValue(usersRef, (snapshot) => {
@@ -70,12 +71,16 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
       const creatorEmail: string = currentUser.email; 
   
       const tasksRef = ref(db, 'tasks');
+
+      const statusImage = assignedTo.trim() === '' ? 'default' : 'inProgress';
+
       await push(tasksRef, {
         title: taskTitle,
         body: taskBody,
         createdBy: creatorEmail,
         assignedTo: assignedTo,
         dateTime: new Date().toLocaleString(),
+        statusImage: statusImage,
       });
   
       setTaskTitle('');
@@ -106,6 +111,9 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
       const taskRef = ref(db, `tasks/${selectedTask.id}`);
       await remove(taskRef);
       Alert.alert('Task deleted', `${selectedTask.title} `);
+      setTaskTitle('');
+      setTaskBody('');
+      setAssignedTo('');
       setTaskModalVisible(false);
     } catch (error) {
       console.error(error);
@@ -116,10 +124,15 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
   const editTask = async () => {
     if (!selectedTask || taskTitle.trim() === '') return;
 
+    const statusImage = assignedTo.trim() === '' ? 'default' : 'inProgress';
+
     try {
       const taskRef = ref(db, `tasks/${selectedTask.id}`);
-      await update(taskRef, { title: taskTitle, body: taskBody, assignedTo: assignedTo });
+      await update(taskRef, { title: taskTitle, body: taskBody, assignedTo: assignedTo,statusImage: statusImage });
       Alert.alert('Success', 'Task updated successfully!');
+      setTaskTitle('');
+      setTaskBody('');
+      setAssignedTo('');
       setTaskModalVisible(false);
       sendNotification(assignedTo,taskTitle);
     } catch (error) {
@@ -220,24 +233,40 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
     }
     };
 
-  const renderItem = ({ item }: { item: Task }) => (
-    <TouchableOpacity onPress={() => handleTaskPress(item)} style={styles.taskItem}>
-      <View style={styles.taskContainer}>
-        <Text style={styles.taskTitle}>{item.title}</Text>
-      </View>
-      <View style={styles.line} />
-      <View>
-        <Text style={styles.taskBody}>{item.body}</Text>
-      </View>
-      <View>
-        <Text style={styles.taskTimestamp}>Creator ● {item.createdBy}</Text>
-        <Text style={styles.taskTimestamp}>Assigned to ● {item.assignedTo}</Text>
-        <View style={styles.assignedToContainer}>
-          <Text style={styles.taskTimestamp}>{item.dateTime}</Text>
+    const renderItem = ({ item }: { item: Task }) => (
+      <TouchableOpacity onPress={() => handleTaskPress(item)} style={styles.taskItem}>
+        <View style={styles.taskContainer}>
+          <Text style={styles.taskTitle}>{item.title}</Text>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+        <View style={styles.line} />
+        <View>
+          <Text style={styles.taskBody}>{item.body}</Text>
+        </View>
+        <View style={styles.row}>
+          {/* Left Column: Text */}
+          <View style={styles.textColumn}>
+            <Text style={styles.taskTimestamp}>Creator ● {item.createdBy}</Text>
+            <Text style={styles.taskTimestamp}>Assigned to ● {item.assignedTo}</Text>
+            <View style={styles.assignedToContainer}>
+              <Text style={styles.taskTimestamp}>{item.dateTime}</Text>
+            </View>
+          </View>
+          {/* Right Column: Image */}
+          <View style={styles.imageColumn}>
+          <Image 
+          source={
+            item.statusImage === 'inProgress' 
+              ? require('../assets/images/mechanic.png') 
+              : item.statusImage === 'done' 
+              ? require('../assets/images/tick.png') 
+              : require('../assets/images/zzz.png')
+          } 
+          style={styles.icon} 
+        />
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
   
   return (
     <View style={styles.container}>
@@ -264,7 +293,7 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
       <TouchableOpacity
         style={styles.closeButton}
         onPress={() => {setModalVisible(false),setAssignedTo('');}}
-        hitSlop={{ top: 10, bottom: 50, left: 50, right: 10 }}
+        hitSlop={{ top: 10, bottom: 100, left: 10, right: 10 }}
       >
         <Text style={styles.closeButtonText}>X</Text>
       </TouchableOpacity>
@@ -313,7 +342,7 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
 </Modal>
 
 
-        {/* Task Actions Modal */}
+        {/* Edit Task Modal */}
         <Modal
   animationType="fade"
   transparent={true}
@@ -338,7 +367,7 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
       >
         <Text style={styles.closeButtonText}>X</Text>
       </TouchableOpacity>
-
+      <Text></Text>
       <Text style={styles.text}>Edit task title</Text>
       <TextInput
         style={styles.input}
@@ -492,5 +521,23 @@ const styles = StyleSheet.create({
   userEmail: {
     fontSize: 14,
     color: '#333',
+  },
+  icon: {
+    width: 40, // Image width
+    height: 40, // Image height
+    resizeMode: 'contain', // Ensures the image maintains its aspect ratio
+  },
+  imageColumn: {
+    width: 50, // Adjust to the size of the image
+    alignItems: 'center', // Centers the image horizontally
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  textColumn: {
+    flex: 1,
+    paddingRight: 10, // Adds spacing between text and image
   },
 });
