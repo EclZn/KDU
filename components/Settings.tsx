@@ -2,7 +2,6 @@ import React from 'react';
 import { View, Text, TouchableOpacity ,StyleSheet,Alert} from 'react-native';
 import { firebase_auth } from '../firebase';
 import { ONESIGNAL_API_KEY, ONESIGNAL_APP_ID } from '@env' ;
-import { OneSignal } from 'react-native-onesignal';
 
 function Settings() {
 
