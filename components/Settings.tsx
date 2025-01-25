@@ -2,10 +2,13 @@ import React from 'react';
 import { View, Text, TouchableOpacity ,StyleSheet,Alert} from 'react-native';
 import { firebase_auth } from '../firebase';
 import { ONESIGNAL_API_KEY, ONESIGNAL_APP_ID } from '@env' ;
+import { LogLevel, OneSignal } from 'react-native-onesignal';
 
 function Settings() {
 
-
+const NotificationPermission = ()=>{
+  OneSignal.Notifications.requestPermission(true);
+}
 const sendNotification = async () => {
     const apiKey = ONESIGNAL_API_KEY; // Replace with the OneSignal API Key
     const appId = ONESIGNAL_APP_ID; // Replace with the OneSignal App ID, not Device OneSignal App ID
@@ -65,6 +68,9 @@ const sendNotification = async () => {
       </TouchableOpacity>
       <TouchableOpacity style={styles.button} onPress={sendNotification}>
               <Text style={styles.buttonText}>Send Notification</Text>
+            </TouchableOpacity>    
+            <TouchableOpacity style={styles.button} onPress={NotificationPermission}>
+              <Text style={styles.buttonText}>Notifications Permission</Text>
             </TouchableOpacity>      
     </View>
   );

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, Alert } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Alert, TouchableOpacity} from 'react-native';
 import { firebase_auth } from '../firebase';
 import { db } from '../firebase';
 import { ref, onValue } from 'firebase/database';
@@ -57,16 +57,24 @@ const Blank: React.FC = () => {
   );
 
   return (
-    <View style={styles.container}>
-      <Text>Email: {userEmail}</Text>
-      <FlatList
-        data={filteredTasks}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={styles.listContainer}
-      />
+  <View style={styles.container}>
+    <View style={styles.rowContainer}>
+      <Text style={[styles.emailText,{marginLeft:10,fontWeight:'800'}]}>Current Email: {userEmail}</Text>
+      <TouchableOpacity style={[styles.button,{marginLeft:'auto',marginRight:10}]} onPress={()=> firebase_auth.signOut()}>
+        <Text style={styles.buttonText}>Log out</Text>
+      </TouchableOpacity>
     </View>
-  );
+    <View style={styles.line} />
+
+
+    <FlatList
+      data={filteredTasks}
+      keyExtractor={(item) => item.id}
+      renderItem={renderItem}
+      contentContainerStyle={styles.listContainer}
+    />
+  </View>
+);
 };
 
 export default Blank;
@@ -75,6 +83,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 10,
+  },
+  button: {
+    backgroundColor: '#007BFF',
+    borderRadius: 3,
+    width:'auto',
+    height:'auto',
+    padding:10,
   },
   listContainer: {
     marginTop: 20,
@@ -102,4 +117,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#ccc',
     marginVertical: 5,
   },
+  rowContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap', // Allow content to wrap to the next line if needed
+    alignItems: 'center', // Vertically align items in the row
+    marginBottom: 10, // Add some space at the bottom
+  },
+  emailText: {
+    marginRight: 10, // Add spacing between email and button
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  
 });

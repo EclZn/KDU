@@ -13,6 +13,8 @@ interface Task {
   assignedTo: string;
   dateTime: string;
   statusImage: string;
+  lastEdited: string;
+  editedBy: string;
 }
 
 const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
@@ -27,8 +29,11 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [users, setUsers] = useState<string[]>([]);
   const [assignedTo, setAssignedTo] = useState<string>('Unassigned');
   
-  useEffect(() => {
+  const [markAsDoneText, setMarkAsDoneText] = useState('Mark as Done');
+  const [deleteText, setDeleteText] = useState('Delete Task');
 
+
+  useEffect(() => {
     const tasksRef = ref(db, 'tasks');
     const unsubscribe = onValue(tasksRef, (snapshot) => {
       const data = snapshot.val();
@@ -53,6 +58,21 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
       unsubscribeUsers();
     };
   }, []);
+
+  const markTaskAsDone = async () => {
+    if (!selectedTask || taskTitle.trim() === '') return;
+    try {
+      const taskRef = ref(db, `tasks/${selectedTask.id}`);
+      await update(taskRef, { statusImage: 'done' });
+      setTaskTitle('');
+      setTaskBody('');
+      setAssignedTo('');
+      setTaskModalVisible(false);
+    } catch (error) {
+      console.error(error);
+      Alert.alert('Error', 'Failed to update task.');
+    }
+  };
 
   const addTask = async () => {
     if (taskTitle.trim() === '') {
@@ -125,10 +145,26 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
     if (!selectedTask || taskTitle.trim() === '') return;
 
     const statusImage = assignedTo.trim() === '' ? 'default' : 'inProgress';
+    
+    const currentUser = firebase_auth.currentUser;
+  
+      if (!currentUser || !currentUser.email) {
+        Alert.alert('Error', 'User not logged in or email not available.');
+        return;
+      }
+  
+      const creatorEmail: string = currentUser.email; 
 
     try {
       const taskRef = ref(db, `tasks/${selectedTask.id}`);
-      await update(taskRef, { title: taskTitle, body: taskBody, assignedTo: assignedTo,statusImage: statusImage });
+      await update(taskRef, { 
+        title: taskTitle,
+        body: taskBody, 
+        assignedTo: assignedTo,
+        statusImage: statusImage,
+        lastEdited:new Date().toLocaleString(),
+        editedBy: creatorEmail });
+
       Alert.alert('Success', 'Task updated successfully!');
       setTaskTitle('');
       setTaskBody('');
@@ -245,11 +281,21 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
         <View style={styles.row}>
           {/* Left Column: Text */}
           <View style={styles.textColumn}>
-            <Text style={styles.taskTimestamp}>Creator ● {item.createdBy}</Text>
-            <Text style={styles.taskTimestamp}>Assigned to ● {item.assignedTo}</Text>
+            <Text style={styles.taskTimestamp}>Creator         ● {item.createdBy}</Text>
+            {item.assignedTo && (
+              <> 
+              <Text style={styles.taskTimestamp}>Assigned to ● {item.assignedTo}</Text>
+              </>)}
             <View style={styles.assignedToContainer}>
-              <Text style={styles.taskTimestamp}>{item.dateTime}</Text>
+              <Text style={styles.taskTimestamp}>Created on   ● {item.dateTime}</Text>
             </View>
+            {/*Conditionally render */}
+            {item.editedBy && item.lastEdited && (
+                 <>
+                   <Text style={styles.taskTimestamp}>Edited by ● {item.editedBy}</Text>
+                   <Text style={styles.taskTimestamp}>Edited on ● {item.lastEdited}</Text>
+                 </>
+               )}
           </View>
           {/* Right Column: Image */}
           <View style={styles.imageColumn}>
@@ -351,6 +397,7 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
     setTaskModalVisible(false);
     setTaskTitle('');
     setTaskBody('');
+    setMarkAsDoneText('Mark as Done'); 
   }}      
 >
   <View style={styles.modalContainer}>
@@ -362,6 +409,8 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
           setTaskTitle('');
           setTaskBody('');
           setAssignedTo('');
+          setDeleteText('Delete Task');
+          setMarkAsDoneText('Mark as Done');
         }}
         hitSlop={{ top: 10, bottom: 50, left: 50, right: 10 }}
       >
@@ -383,7 +432,7 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
         onChangeText={setTaskBody}
       />
 
-      {/* Add the user selection part in Edit Modal */}
+      {/* User selection part in Edit Modal */}
       <Text style={styles.text}>Select User</Text>
       <FlatList
         data={users}
@@ -398,20 +447,45 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
           </TouchableOpacity>
         )}
       />
-      <Text style={styles.text}>Selected: {assignedTo}</Text>
+      <Text style={styles.text}>Selected:</Text>
+      <Text style={[styles.text, { color: '#888' }]}>{assignedTo}</Text>
+
+
+      {/* Mark as Done Button */}
+      <TouchableOpacity
+        style={[styles.button, styles.button,{backgroundColor:'green'}]}
+        onPress={() => {
+          if (markAsDoneText === 'Mark as Done') {
+            setMarkAsDoneText('Are you sure?');
+          } else {
+            markTaskAsDone(); // Trigger the function
+            setMarkAsDoneText('Mark as Done'); // Reset the button text
+          }
+        }}
+      >
+        <Text style={styles.buttonText}>{markAsDoneText}</Text>
+      </TouchableOpacity>
 
       <TouchableOpacity style={styles.button} onPress={editTask}>
         <Text style={styles.buttonText}>Save Changes</Text>
       </TouchableOpacity>
       <TouchableOpacity
         style={[styles.button, styles.cancelButton]}
-        onPress={deleteTask}
+        onPress={() => {
+          if (deleteText === 'Delete Task') {
+            setDeleteText('Are you sure?');
+          } else {
+            deleteTask(); // Trigger the function
+            setDeleteText('Delete Task'); // Reset the button text
+          }
+        }}
       >
-        <Text style={styles.buttonText}>Delete Task</Text>
+        <Text style={styles.buttonText}>{deleteText}</Text>
       </TouchableOpacity>
     </View>
   </View>
 </Modal>
+
 
     </View>
   );
