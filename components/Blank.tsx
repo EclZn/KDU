@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, StyleSheet, Alert, TouchableOpacity} from 'react-native';
+import { View, Text, FlatList, StyleSheet, Alert, TouchableOpacity,Image} from 'react-native';
 import { firebase_auth } from '../firebase';
 import { db } from '../firebase';
 import { ref, onValue } from 'firebase/database';
@@ -11,6 +11,9 @@ interface Task {
   createdBy: string;
   assignedTo: string;
   dateTime: string;
+  editedBy: string;
+  lastEdited: string;
+  statusImage: string;
 }
 
 const Blank: React.FC = () => {
@@ -47,12 +50,46 @@ const Blank: React.FC = () => {
 
   const renderItem = ({ item }: { item: Task }) => (
     <View style={styles.taskItem}>
-      <Text style={styles.taskTitle}>{item.title}</Text>
-      <View style={styles.line} />
-      <Text style={styles.taskBody}>{item.body}</Text>
-      <Text style={styles.taskTimestamp}>Assigned to: {item.assignedTo}</Text>
-      <Text style={styles.taskTimestamp}>Created by: {item.createdBy}</Text>
-      <Text style={styles.taskTimestamp}>Date: {item.dateTime}</Text>
+     <View style={styles.taskContainer}>
+               <Text style={styles.taskTitle}>{item.title}</Text>
+             </View>
+             <View style={styles.line} />
+             <View>
+               <Text style={styles.taskBody}>{item.body}</Text>
+             </View>
+             <View style={styles.row}>
+               {/* Left Column: Text */}
+               <View style={styles.textColumn}>
+                 <Text style={styles.taskTimestamp}>Creator         ● {item.createdBy}</Text>
+                 {item.assignedTo && (
+                   <> 
+                   <Text style={styles.taskTimestamp}>Assigned to ● {item.assignedTo}</Text>
+                   </>)}
+                 <View style={styles.assignedToContainer}>
+                   <Text style={styles.taskTimestamp}>Created on   ● {item.dateTime}</Text>
+                 </View>
+                 {/*Conditionally render */}
+                 {item.editedBy && item.lastEdited && (
+                      <>
+                        <Text style={styles.taskTimestamp}>Edited by ● {item.editedBy}</Text>
+                        <Text style={styles.taskTimestamp}>Edited on ● {item.lastEdited}</Text>
+                      </>
+                    )}
+               </View>
+               {/* Right Column: Image */}
+               <View style={styles.imageColumn}>
+               <Image 
+               source={
+                 item.statusImage === 'inProgress' 
+                   ? require('../assets/images/mechanic.png') 
+                   : item.statusImage === 'done' 
+                   ? require('../assets/images/tick.png') 
+                   : require('../assets/images/zzz.png')
+               } 
+               style={styles.icon} 
+             />
+               </View>
+             </View>
     </View>
   );
 
@@ -130,5 +167,31 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
-  
+  taskContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  imageColumn: {
+    width: 50, // Adjust to the size of the image
+    alignItems: 'center', // Centers the image horizontally
+  },
+  textColumn: {
+    flex: 1,
+    paddingRight: 10, // Adds spacing between text and image
+  },
+  assignedToContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  icon: {
+    width: 40, // Image width
+    height: 40, // Image height
+    resizeMode: 'contain', // Ensures the image maintains its aspect ratio
+  },
 });

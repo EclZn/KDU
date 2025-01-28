@@ -18,7 +18,7 @@ function DrawerNavigator() {
     <Drawer.Navigator initialRouteName="Home">
       <Drawer.Screen name="Home" component={Home} />
       <Drawer.Screen name="Settings" component={Settings} />
-      <Drawer.Screen name="Blank" component={Blank} />
+      <Drawer.Screen name="Profile" component={Blank} />
     </Drawer.Navigator>
   );
 }

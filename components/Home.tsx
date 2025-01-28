@@ -181,8 +181,8 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
       const apiKey = ONESIGNAL_API_KEY; // Replace with the OneSignal API Key
       const appId = ONESIGNAL_APP_ID; // Replace with the OneSignal App ID, not Device OneSignal App ID
   
-      // Sets an external id for the users device, then sends notification with include_aliases targeting the external id, include_segments targeting a segment list of users.
-  
+      // Sends notification to specific user if receiver is provided, else sends to all users
+
       if(receiver)
       {
         const notificationData = {
@@ -234,7 +234,7 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
         included_segments: ["Total Subscriptions"],
         app_id: appId,
         contents: {
-          en: "Hello, world",
+          en: taskTitle,
         },
   
       };
@@ -250,7 +250,6 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
   
         if (response.ok) {
           const responseData = await response.json();
-          Alert.alert("Success", "Notification sent successfully!");
           console.log(responseData);
         } else {
           Alert.alert("Error", `Failed to send notification: ${response.status}`);
@@ -355,7 +354,7 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
       />
       <Text style={styles.text}>Task Body</Text>
       <TextInput
-        style={[styles.input, { verticalAlign: 'top', height: 80 }]}
+        style={[styles.input, { verticalAlign: 'top', height: 100 }]}
         placeholder="Enter task body"
         placeholderTextColor="#888"
         value={taskBody}
@@ -378,8 +377,8 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
           </TouchableOpacity>
         )}
       />
-      <Text style={styles.text}>Selected: {assignedTo}</Text>
-
+      <Text style={[styles.text]}>Selected:</Text>
+      <Text style={[styles.text, { color: '#888' }]}>{assignedTo}</Text>
       <TouchableOpacity style={styles.button} onPress={addTask}>
         <Text style={styles.buttonText}>Add Task</Text>
       </TouchableOpacity>
@@ -426,7 +425,7 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
       />
       <Text style={styles.text}>Edit task body</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { verticalAlign: 'top', height: 100 }]}
         placeholder="Edit task body"
         value={taskBody}
         onChangeText={setTaskBody}
@@ -597,8 +596,8 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   icon: {
-    width: 40, // Image width
-    height: 40, // Image height
+    width: 50, // Image width
+    height: 50, // Image height
     resizeMode: 'contain', // Ensures the image maintains its aspect ratio
   },
   imageColumn: {

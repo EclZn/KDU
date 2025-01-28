@@ -1,109 +1,91 @@
-import React from 'react';
-import { View, Text, TouchableOpacity ,StyleSheet,Alert} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { firebase_auth } from '../firebase';
-import { ONESIGNAL_API_KEY, ONESIGNAL_APP_ID } from '@env' ;
-import { LogLevel, OneSignal } from 'react-native-onesignal';
+import { OneSignal } from 'react-native-onesignal';
+import { Picker } from '@react-native-picker/picker';
 
 function Settings() {
+  const [selectedValue, setSelectedValue] = useState<string | null>(null);
+  const [email, setEmail] = useState('');
 
-const NotificationPermission = ()=>{
-  OneSignal.Notifications.requestPermission(true);
-}
-const sendNotification = async () => {
-    const apiKey = ONESIGNAL_API_KEY; // Replace with the OneSignal API Key
-    const appId = ONESIGNAL_APP_ID; // Replace with the OneSignal App ID, not Device OneSignal App ID
+  const auth = firebase_auth;
 
-    // Sets an external id for the users device, then sends notification with include_aliases targeting the external id, include_segments targeting a segment list of users.
-
-    
-    const notificationData = {
-      target_channel: "push",
-     // included_segments: ["TestSegment"],
-     include_aliases: {
-      "external_id": [
-        "test@test.com",
-      ]
-    },
-      app_id: appId,
-      contents: {
-        en: "Hello, world",
-      },
-
-    };
-    try {
-      const response = await fetch("https://api.onesignal.com/notifications", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Key ${apiKey}`,
-        },
-        body: JSON.stringify(notificationData),
-      });
-
-      if (response.ok) {
-        const responseData = await response.json();
-        Alert.alert("Success", "Notification sent successfully!");
-        console.log(responseData);
-      } else {
-        Alert.alert("Error", `Failed to send notification: ${response.status}`);
-        console.error(await response.text());
-      }
-    } catch (error: unknown) {
-      // Type guard for error
-      if (error instanceof Error) {
-        Alert.alert("Error", `An error occurred: ${error.message}`);
-        console.error(error.message);
-      } else {
-        Alert.alert("Error", "An unknown error occurred");
-        console.error("Unknown error:", error);
+  useEffect(() => {
+    const currentUser = auth.currentUser;
+    if (currentUser && currentUser.email) {
+      setEmail(currentUser.email);
+    } else {
+      Alert.alert('Error', 'No user is currently logged in.');
     }
-  }
+  }, []);
+
+  const NotificationPermission = () => {
+    OneSignal.Notifications.requestPermission(true);
+    OneSignal.login(email);
   };
 
   return (
-    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text>Settings Screen</Text>
-      <TouchableOpacity style={styles.button} onPress={()=> firebase_auth.signOut()}>
-        <Text style={styles.buttonText}>Log out</Text>
+    <View style={styles.container}>
+      <Text style={styles.header}>Settings</Text>
+
+      <View style={styles.pickerContainer}>
+        <Text style={styles.label}>Select an Option:</Text>
+        <Picker
+          selectedValue={selectedValue}
+          onValueChange={(itemValue) => setSelectedValue(itemValue)}
+          style={styles.picker}
+        >
+          <Picker.Item label="Done" value="done" />
+          <Picker.Item label="Not Assigned" value="not_assigned" />
+          <Picker.Item label="Assigned" value="assigned" />
+        </Picker>
+      </View>
+
+      <TouchableOpacity style={styles.button} onPress={NotificationPermission}>
+        <Text style={styles.buttonText}>Notifications Permission</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.button} onPress={sendNotification}>
-              <Text style={styles.buttonText}>Send Notification</Text>
-            </TouchableOpacity>    
-            <TouchableOpacity style={styles.button} onPress={NotificationPermission}>
-              <Text style={styles.buttonText}>Notifications Permission</Text>
-            </TouchableOpacity>      
     </View>
   );
 }
 
-export default Settings
-
+export default Settings;
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: 10,
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
-  input: {
-    height: 40,
-    borderColor: '#ccc',
-    borderWidth: 1,
+  header: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
+  pickerContainer: {
+    marginBottom: 20,
+    width: '80%',
+  },
+  label: {
+    fontSize: 16,
     marginBottom: 10,
-    paddingHorizontal: 10,
-  },
-  text: {
-    fontSize: 18,
     color: '#333',
   },
+  picker: {
+    height: 50,
+    width: '100%',
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 5,
+    backgroundColor: '#f9f9f9',
+  },
   button: {
-    marginTop: 10,
-    padding: 10,
+    padding: 12,
     backgroundColor: '#007BFF',
     borderRadius: 5,
   },
   buttonText: {
     color: '#fff',
     fontSize: 16,
-  }
+  },
 });
