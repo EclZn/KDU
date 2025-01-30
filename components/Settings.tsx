@@ -2,12 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { firebase_auth } from '../firebase';
 import { OneSignal } from 'react-native-onesignal';
-import { Picker } from '@react-native-picker/picker';
+import { Dropdown } from 'react-native-element-dropdown';
+
+const data = [
+  { label: 'Option 1', value: '1' },
+  { label: 'Option 2', value: '2' },
+  { label: 'Option 3', value: '3' },
+];
 
 function Settings() {
-  const [selectedValue, setSelectedValue] = useState<string | null>(null);
   const [email, setEmail] = useState('');
-
+  const [selectedOption, setSelectedOption] = useState(null);
   const auth = firebase_auth;
 
   useEffect(() => {
@@ -28,18 +33,17 @@ function Settings() {
     <View style={styles.container}>
       <Text style={styles.header}>Settings</Text>
 
-      <View style={styles.pickerContainer}>
-        <Text style={styles.label}>Select an Option:</Text>
-        <Picker
-          selectedValue={selectedValue}
-          onValueChange={(itemValue) => setSelectedValue(itemValue)}
-          style={styles.picker}
-        >
-          <Picker.Item label="Done" value="done" />
-          <Picker.Item label="Not Assigned" value="not_assigned" />
-          <Picker.Item label="Assigned" value="assigned" />
-        </Picker>
-      </View>
+      <Dropdown
+        style={styles.dropdown}
+        data={data}
+        labelField="label"
+        valueField="value"
+        placeholder="Select an option"
+        value={selectedOption}
+        onChange={item => {
+          setSelectedOption(item.value);
+        }}
+      />
 
       <TouchableOpacity style={styles.button} onPress={NotificationPermission}>
         <Text style={styles.buttonText}>Notifications Permission</Text>
@@ -62,22 +66,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 20,
   },
-  pickerContainer: {
+  dropdown: {
+    width: '50%',
+    height: '6%',
     marginBottom: 20,
-    width: '80%',
-  },
-  label: {
-    fontSize: 16,
-    marginBottom: 10,
-    color: '#333',
-  },
-  picker: {
-    height: 50,
-    width: '100%',
     borderColor: '#ccc',
     borderWidth: 1,
     borderRadius: 5,
-    backgroundColor: '#f9f9f9',
+    paddingHorizontal: 10,
+    paddingVertical: 8,
   },
   button: {
     padding: 12,

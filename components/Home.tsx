@@ -4,6 +4,7 @@ import { firebase_auth } from '../firebase';
 import { db } from '../firebase';
 import { ref, push, onValue, update, remove } from 'firebase/database';
 import { ONESIGNAL_API_KEY, ONESIGNAL_APP_ID } from '@env' ;
+import { Dropdown } from 'react-native-element-dropdown';
 
 interface Task {
   id: string;
@@ -16,6 +17,8 @@ interface Task {
   lastEdited: string;
   editedBy: string;
 }
+
+
 
 const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [modalVisible, setModalVisible] = useState(false);
@@ -32,19 +35,34 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [markAsDoneText, setMarkAsDoneText] = useState('Mark as Done');
   const [deleteText, setDeleteText] = useState('Delete Task');
 
+  const [selectedOption, setSelectedOption] = useState(null);
+  
 
   useEffect(() => {
     const tasksRef = ref(db, 'tasks');
-    const unsubscribe = onValue(tasksRef, (snapshot) => {
-      const data = snapshot.val();
-      const taskList: Task[] = data
-        ? Object.keys(data).map((key) => ({
-            id: key,
-            ...data[key],
-          }))
-        : [];
-        setTasks(taskList.reverse());
-    });
+const unsubscribe = onValue(tasksRef, (snapshot) => {
+  const data = snapshot.val();
+  let taskList: Task[] = data
+    ? Object.keys(data).map((key) => ({
+        id: key,
+        ...data[key],
+      }))
+    : [];
+
+  // Filtering logic based on the dropdown selection
+  if (selectedOption === '2') {
+    // Show only completed tasks
+    taskList = taskList.filter((task) => task.statusImage === 'done');
+  } else if (selectedOption === '3') {
+    // Show only ongoing tasks
+    taskList = taskList.filter((task) => task.statusImage === 'inProgress');
+  } else if (selectedOption === '4') {
+    // Show only not assigned tasks (assuming tasks with no assignedTo are "not assigned")
+    taskList = taskList.filter((task) => !task.assignedTo);
+  }
+
+  setTasks(taskList.reverse());
+});
     const usersRef = ref(db, `users/`);
     const unsubscribeUsers = onValue(usersRef, (snapshot) => {
       const data = snapshot.val();
@@ -57,7 +75,7 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
       unsubscribe();
       unsubscribeUsers();
     };
-  }, []);
+  }, [selectedOption]);
 
   const markTaskAsDone = async () => {
     if (!selectedTask || taskTitle.trim() === '') return;
@@ -268,6 +286,18 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
     }
     };
 
+    const filterDropDown = [
+      { label: 'All', value: '1' },
+      { label: 'Completed', value: '2'},
+      { label: 'Ongoing', value: '3' },
+      { label: 'Not assigned', value: '4' },
+    ];
+    const renderDropdownItem = (item: any) => (
+      <View style={styles.dropdownItem}>
+        <Text style={styles.dropdownItemText}>{item.label}</Text>
+      </View>
+    )
+
     const renderItem = ({ item }: { item: Task }) => (
       <TouchableOpacity onPress={() => handleTaskPress(item)} style={styles.taskItem}>
         <View style={styles.taskContainer}>
@@ -298,7 +328,7 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
           </View>
           {/* Right Column: Image */}
           <View style={styles.imageColumn}>
-          <Image 
+          <Image style={styles.icon} 
           source={
             item.statusImage === 'inProgress' 
               ? require('../assets/images/mechanic.png') 
@@ -306,7 +336,7 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
               ? require('../assets/images/tick.png') 
               : require('../assets/images/zzz.png')
           } 
-          style={styles.icon} 
+          
         />
           </View>
         </View>
@@ -318,7 +348,18 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
       <TouchableOpacity style={styles.button} onPress={() => setModalVisible(true)}>
         <Text style={styles.buttonText}>Add Task</Text>
       </TouchableOpacity>
-
+        <Dropdown
+                style={styles.dropdown}
+                data={filterDropDown}
+                labelField="label"
+                valueField="value"
+                placeholder="Filter Tasks"
+                value={selectedOption}
+                onChange={item => {
+                  setSelectedOption(item.value);
+                }}
+                renderItem={renderDropdownItem}
+        />
       <FlatList
         data={tasks}
         keyExtractor={(item) => item.id}
@@ -612,5 +653,23 @@ const styles = StyleSheet.create({
   textColumn: {
     flex: 1,
     paddingRight: 10, // Adds spacing between text and image
+  },
+  dropdown: {
+    width: '50%',
+    height: '6%',
+    marginTop:10,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 3,
+    paddingHorizontal: 10,
+  },
+  dropdownItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderBottomWidth: 0,
+    borderBottomColor: '#ccc',
+  },
+  dropdownItemText: {
+    fontSize: 16,
   },
 });
