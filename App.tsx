@@ -10,6 +10,7 @@ import Blank from './components/Blank';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { firebase_auth } from './firebase';
 import { LogLevel, OneSignal } from 'react-native-onesignal';
+import Clients from './components/Clients';
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
 
@@ -19,6 +20,7 @@ function DrawerNavigator() {
       <Drawer.Screen name="Home" component={Home} />
       <Drawer.Screen name="Settings" component={Settings} />
       <Drawer.Screen name="Profile" component={Blank} />
+      <Drawer.Screen name="Clients" component={Clients} />
     </Drawer.Navigator>
   );
 }
