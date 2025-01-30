@@ -3,6 +3,7 @@ import { View, Text, FlatList, StyleSheet, Alert, TouchableOpacity,Image} from '
 import { firebase_auth } from '../firebase';
 import { db } from '../firebase';
 import { ref, onValue } from 'firebase/database';
+import { Dropdown } from 'react-native-element-dropdown';
 
 interface Task {
   id: string;
@@ -20,17 +21,28 @@ const Blank: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [selectedOption, setSelectedOption] = useState(null);
 
   useEffect(() => {
     const tasksRef = ref(db, 'tasks');
     const unsubscribe = onValue(tasksRef, (snapshot) => {
       const data = snapshot.val();
-      const taskList: Task[] = data
+      let taskList: Task[] = data
         ? Object.keys(data).map((key) => ({
             id: key,
             ...data[key],
           }))
         : [];
+
+        if (selectedOption === '2') {
+          // Show only completed tasks
+          taskList = taskList.filter((task) => task.statusImage === 'done');
+        } else if (selectedOption === '3') {
+          // Show only ongoing tasks
+          taskList = taskList.filter((task) => task.statusImage === 'inProgress');
+        } 
+
+        
       setTasks(taskList);
 
       // Get the current user email and filter tasks
@@ -46,7 +58,17 @@ const Blank: React.FC = () => {
     return () => {
       unsubscribe();
     };
-  }, []);
+  }, [selectedOption]);
+
+  const filterDropDown = [
+        { label: 'All', value: '1' },
+        { label: 'Completed', value: '2'},
+        { label: 'Ongoing', value: '3' },      ];
+      const renderDropdownItem = (item: any) => (
+        <View style={styles.dropdownItem}>
+          <Text style={styles.dropdownItemText}>{item.label}</Text>
+        </View>
+      )
 
   const renderItem = ({ item }: { item: Task }) => (
     <View style={styles.taskItem}>
@@ -102,7 +124,18 @@ const Blank: React.FC = () => {
       </TouchableOpacity>
     </View>
     <View style={styles.line} />
-
+    <Dropdown
+                style={styles.dropdown}
+                data={filterDropDown}
+                labelField="label"
+                valueField="value"
+                placeholder="Filter Tasks"
+                value={selectedOption}
+                onChange={item => {
+                  setSelectedOption(item.value);
+                }}
+                renderItem={renderDropdownItem}
+        />
 
     <FlatList
       data={filteredTasks}
@@ -194,4 +227,22 @@ const styles = StyleSheet.create({
     height: 40, // Image height
     resizeMode: 'contain', // Ensures the image maintains its aspect ratio
   },
+  dropdownItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderBottomWidth: 0,
+    borderBottomColor: '#ccc',
+  },
+  dropdownItemText: {
+    fontSize: 16,
+  },
+  dropdown: {
+    width: '50%',
+    height: '6%',
+    marginTop:10,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 3,
+    paddingHorizontal: 10,
+  },  
 });

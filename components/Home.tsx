@@ -58,7 +58,7 @@ const unsubscribe = onValue(tasksRef, (snapshot) => {
     taskList = taskList.filter((task) => task.statusImage === 'inProgress');
   } else if (selectedOption === '4') {
     // Show only not assigned tasks (assuming tasks with no assignedTo are "not assigned")
-    taskList = taskList.filter((task) => !task.assignedTo);
+    taskList = taskList.filter((task) => task.statusImage === 'default');
   }
 
   setTasks(taskList.reverse());
