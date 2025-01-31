@@ -38,18 +38,33 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
   
   const [usersDropdown, setUsersDropdown] = useState<{ label: string; value: string }[]>([]);
   const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
-
+  const [clientListDropdown, setClientListDropdown] = useState<{ label: string; value: string }[]>([]);
+  const [selectedClient, setSelectedClient] = useState<string | null>(null);
   
+  useEffect(() => {
+    const usersRef = ref(db, 'clients');
+    onValue(usersRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const clientListDropdown: { label: string; value: string }[] = Object.keys(data).map((key) => ({
+          label: data[key].name, 
+          value: data[key].name,
+        }));
+        setClientListDropdown(clientListDropdown); 
+      }
+    });
+  }, []);
+
   useEffect(() => {
     const usersRef = ref(db, 'users');
     onValue(usersRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
         const userListDropdown: { label: string; value: string }[] = Object.keys(data).map((key) => ({
-          label: data[key].email, // Ensure your database has an 'email' field
+          label: data[key].email, 
           value: data[key].email,
         }));
-        setUsersDropdown(userListDropdown); // Now matches the correct type
+        setUsersDropdown(userListDropdown); 
       }
     });
   }, []);
@@ -102,7 +117,8 @@ const unsubscribe = onValue(tasksRef, (snapshot) => {
       await update(taskRef, { statusImage: 'done' });
       setTaskTitle('');
       setTaskBody('');
-      setAssignedTo('');
+      setSelectedEmail('');
+      setSelectedClient('');
       setTaskModalVisible(false);
     } catch (error) {
       console.error(error);
@@ -135,6 +151,7 @@ const unsubscribe = onValue(tasksRef, (snapshot) => {
         body: taskBody,
         createdBy: creatorEmail,
         assignedTo: selectedEmail,
+        client: selectedClient,
         dateTime: new Date().toLocaleString(),
         statusImage: statusImage,
       });
@@ -142,6 +159,7 @@ const unsubscribe = onValue(tasksRef, (snapshot) => {
       setTaskBody('');
       setAssignedTo('');
       setSelectedEmail('')
+      setSelectedClient('')
       setModalVisible(false);
   
       sendNotification(assignedTo,taskTitle);
@@ -177,11 +195,12 @@ const unsubscribe = onValue(tasksRef, (snapshot) => {
       await update(taskRef, { 
         deleted: 'deleted',
         lastEdited:new Date().toLocaleString(),
-        editedBy: creatorEmail });
+        deletedBy: creatorEmail });
 
       setTaskTitle('');
       setTaskBody('');
-      setAssignedTo('');
+      setSelectedEmail('');
+      setSelectedClient('');
       setTaskModalVisible(false);
       sendNotification(assignedTo,taskTitle);
     } catch (error) {
@@ -210,14 +229,15 @@ const unsubscribe = onValue(tasksRef, (snapshot) => {
         title: taskTitle,
         body: taskBody, 
         assignedTo: assignedTo,
+        client: selectedClient,
         statusImage: statusImage,
         lastEdited:new Date().toLocaleString(),
         editedBy: creatorEmail });
 
       setTaskTitle('');
       setTaskBody('');
-      setAssignedTo('');
-      setSelectedEmail('')
+      setSelectedEmail('');
+      setSelectedClient('');
       setTaskModalVisible(false);
       sendNotification(assignedTo,taskTitle);
     } catch (error) {
@@ -437,6 +457,17 @@ const unsubscribe = onValue(tasksRef, (snapshot) => {
       
       <Dropdown
               style={[styles.dropdown,{width:'100%'}, {height: '8%'}]}
+              data={clientListDropdown}
+              labelField="label"
+              valueField="value"
+              placeholder="Select the client"
+              value={selectedClient}
+              onChange={(item) => setSelectedClient(item.value)}
+            />
+            <Text style={[styles.text, { marginTop:10 }]}>Selected:</Text>
+            <Text style={[styles.text, { color: '#888' }]}>{selectedClient}</Text>
+      <Dropdown
+              style={[styles.dropdown,{width:'100%'}, {height: '8%'}]}
               data={usersDropdown}
               labelField="label"
               valueField="value"
@@ -465,6 +496,7 @@ const unsubscribe = onValue(tasksRef, (snapshot) => {
     setTaskTitle('');
     setTaskBody('');
     setSelectedEmail('');
+    setSelectedClient('');
     setMarkAsDoneText('Mark as Done'); 
   }}      
 >
@@ -477,6 +509,7 @@ const unsubscribe = onValue(tasksRef, (snapshot) => {
           setTaskTitle('');
           setTaskBody('');
           setAssignedTo('');
+          setSelectedClient('');
           setSelectedEmail('');
           setMarkAsDoneText('Mark as Done');
         }}
@@ -499,6 +532,18 @@ const unsubscribe = onValue(tasksRef, (snapshot) => {
         value={taskBody}
         onChangeText={setTaskBody}
       />
+       <Dropdown
+              style={[styles.dropdown,{width:'100%'}, {height: '7%'}]}
+              data={clientListDropdown}
+              labelField="label"
+              valueField="value"
+              placeholder="Select the client"
+              value={selectedClient}
+              onChange={(item) => setSelectedClient(item.value)}
+            />
+            <Text style={[styles.text, { marginTop:10 }]}>Selected:</Text>
+            <Text style={[styles.text, { color: '#888' }]}>{selectedClient}</Text>
+
 
       {/* User selection part in Edit Modal */}
       <Dropdown
