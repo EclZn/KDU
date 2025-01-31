@@ -16,6 +16,7 @@ interface Task {
   statusImage: string;
   lastEdited: string;
   editedBy: string;
+  client:string;
 }
 
 
@@ -41,6 +42,7 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [clientListDropdown, setClientListDropdown] = useState<{ label: string; value: string }[]>([]);
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   
+
   useEffect(() => {
     const usersRef = ref(db, 'clients');
     onValue(usersRef, (snapshot) => {
@@ -360,7 +362,7 @@ const unsubscribe = onValue(tasksRef, (snapshot) => {
         <View style={styles.row}>
           {/* Left Column: Text */}
           <View style={styles.textColumn}>
-            <Text style={styles.taskTimestamp}>Creator         ● {item.createdBy}</Text>
+            <Text style={styles.taskTimestamp}>Creator  ● {item.createdBy}</Text>
             {item.assignedTo && (
               <> 
               <Text style={styles.taskTimestamp}>Assigned to ● {item.assignedTo}</Text>
@@ -375,6 +377,10 @@ const unsubscribe = onValue(tasksRef, (snapshot) => {
                    <Text style={styles.taskTimestamp}>Edited on ● {item.lastEdited}</Text>
                  </>
                )}
+               {item.client && (
+              <> 
+              <Text style={styles.taskTimestamp}>Client Name ● {item.client}</Text>
+              </>)}
           </View>
           {/* Right Column: Image */}
           <View style={styles.imageColumn}>
