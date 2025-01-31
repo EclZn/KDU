@@ -125,7 +125,7 @@ const Blank: React.FC = () => {
   <View style={styles.container}>
     <View style={styles.rowContainer}>
       <Text style={[styles.emailText,{marginLeft:10,fontWeight:'800'}]}>Current Email: {userEmail}</Text>
-      <TouchableOpacity style={[styles.button,{marginLeft:'auto',marginRight:10}]} onPress={()=> firebase_auth.signOut()}>
+      <TouchableOpacity style={[styles.button,{marginLeft:'auto',marginRight:10,backgroundColor:'#73706f'}]} onPress={()=> firebase_auth.signOut()}>
         <Text style={styles.buttonText}>Log out</Text>
       </TouchableOpacity>
     </View>

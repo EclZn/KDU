@@ -29,7 +29,6 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
   const [taskModalVisible, setTaskModalVisible] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-  const [users, setUsers] = useState<string[]>([]);
   const [assignedTo, setAssignedTo] = useState<string>('Unassigned');
   
   const [markAsDoneText, setMarkAsDoneText] = useState('Mark as Done');
@@ -89,7 +88,6 @@ const unsubscribe = onValue(tasksRef, (snapshot) => {
       const userList = data
         ? Object.keys(data).map((key) => data[key].email) // Extract the email for each user
         : [];
-      setUsers(userList);
     });
     return () => {
       unsubscribe();
@@ -362,7 +360,7 @@ const unsubscribe = onValue(tasksRef, (snapshot) => {
           <View style={styles.imageColumn}>
           <Image style={styles.icon} 
           source={
-            item.statusImage === 'inProgress' 
+            item.assignedTo === 'inProgress' 
               ? require('../assets/images/mechanic.png') 
               : item.statusImage === 'done' 
               ? require('../assets/images/tick.png') 
@@ -377,8 +375,8 @@ const unsubscribe = onValue(tasksRef, (snapshot) => {
   
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.button} onPress={() => setModalVisible(true)}>
-        <Text style={styles.buttonText}>Add Task</Text>
+      <TouchableOpacity style={[styles.button,{backgroundColor:'#817E7D'}]} onPress={() => setModalVisible(true)}>
+        <Text style={[styles.buttonText,{textAlign:'center'}]}>Add Task</Text>
       </TouchableOpacity>
       
 
@@ -449,8 +447,8 @@ const unsubscribe = onValue(tasksRef, (snapshot) => {
 
       <Text style={[styles.text, { marginTop:10 }]}>Selected:</Text>
       <Text style={[styles.text, { color: '#888' }]}>{selectedEmail}</Text>
-      <TouchableOpacity style={styles.button} onPress={addTask}>
-        <Text style={styles.buttonText}>Add Task</Text>
+      <TouchableOpacity style={[styles.button,{backgroundColor:'#817E7D'}]} onPress={addTask}>
+        <Text style={[styles.buttonText,{textAlign:'center'}]}>Add Task</Text>
       </TouchableOpacity>
     </View>
   </View>
@@ -531,7 +529,7 @@ const unsubscribe = onValue(tasksRef, (snapshot) => {
         <Text style={styles.buttonText}>{markAsDoneText}</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.button} onPress={editTask}>
+      <TouchableOpacity style={[styles.button,{backgroundColor:'#73706f'}]} onPress={editTask}>
         <Text style={styles.buttonText}>Save Changes</Text>
       </TouchableOpacity>
       <TouchableOpacity
