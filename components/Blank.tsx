@@ -27,6 +27,7 @@ const Blank: React.FC = () => {
     const tasksRef = ref(db, 'tasks');
     const unsubscribe = onValue(tasksRef, (snapshot) => {
       const data = snapshot.val();
+      console.log("Fetched data:", data); 
       let taskList: Task[] = data
         ? Object.keys(data).map((key) => ({
             id: key,
@@ -40,7 +41,10 @@ const Blank: React.FC = () => {
         } else if (selectedOption === '3') {
           // Show only ongoing tasks
           taskList = taskList.filter((task) => task.statusImage === 'inProgress');
-        } 
+        } else if (selectedOption === '4') {
+          // Show only not assigned tasks (assuming tasks with no assignedTo are "not assigned")
+          taskList = taskList.filter((task) => !task.assignedTo);
+        }
 
         
       setTasks(taskList);
@@ -63,7 +67,9 @@ const Blank: React.FC = () => {
   const filterDropDown = [
         { label: 'All', value: '1' },
         { label: 'Completed', value: '2'},
-        { label: 'Ongoing', value: '3' },      ];
+        { label: 'Ongoing', value: '3' },
+        { label: 'Not assigned', value: '4' },
+      ];
       const renderDropdownItem = (item: any) => (
         <View style={styles.dropdownItem}>
           <Text style={styles.dropdownItemText}>{item.label}</Text>

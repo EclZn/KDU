@@ -37,6 +37,24 @@ const Home: React.FC<{ navigation: any }> = ({ navigation }) => {
 
   const [selectedOption, setSelectedOption] = useState(null);
   
+  const [usersDropdown, setUsersDropdown] = useState<{ label: string; value: string }[]>([]);
+  const [selectedEmail, setSelectedEmail] = useState<string | null>(null);
+
+  
+  useEffect(() => {
+    const usersRef = ref(db, 'users');
+    onValue(usersRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const userListDropdown: { label: string; value: string }[] = Object.keys(data).map((key) => ({
+          label: data[key].email, // Ensure your database has an 'email' field
+          value: data[key].email,
+        }));
+        setUsersDropdown(userListDropdown); // Now matches the correct type
+      }
+    });
+  }, []);
+  
 
   useEffect(() => {
     const tasksRef = ref(db, 'tasks');
@@ -47,7 +65,9 @@ const unsubscribe = onValue(tasksRef, (snapshot) => {
         id: key,
         ...data[key],
       }))
+      .filter((task) => task.deleted !== 'deleted')
     : [];
+
 
   // Filtering logic based on the dropdown selection
   if (selectedOption === '2') {
@@ -116,14 +136,14 @@ const unsubscribe = onValue(tasksRef, (snapshot) => {
         title: taskTitle,
         body: taskBody,
         createdBy: creatorEmail,
-        assignedTo: assignedTo,
+        assignedTo: selectedEmail,
         dateTime: new Date().toLocaleString(),
         statusImage: statusImage,
       });
-  
       setTaskTitle('');
       setTaskBody('');
       setAssignedTo('');
+      setSelectedEmail('')
       setModalVisible(false);
   
       sendNotification(assignedTo,taskTitle);
@@ -142,20 +162,33 @@ const unsubscribe = onValue(tasksRef, (snapshot) => {
     setTaskModalVisible(true);
   };
 
+ 
   const deleteTask = async () => {
     if (!selectedTask) return;
 
+    const currentUser = firebase_auth.currentUser;
+    if (!currentUser || !currentUser.email) {
+      Alert.alert('Error', 'User not logged in or email not available.');
+      return;
+    }
+
+    const creatorEmail: string = currentUser.email; 
+
     try {
       const taskRef = ref(db, `tasks/${selectedTask.id}`);
-      await remove(taskRef);
-      Alert.alert('Task deleted', `${selectedTask.title} `);
+      await update(taskRef, { 
+        deleted: 'deleted',
+        lastEdited:new Date().toLocaleString(),
+        editedBy: creatorEmail });
+
       setTaskTitle('');
       setTaskBody('');
       setAssignedTo('');
       setTaskModalVisible(false);
+      sendNotification(assignedTo,taskTitle);
     } catch (error) {
       console.error(error);
-      Alert.alert('Error', 'Failed to delete task.');
+      Alert.alert('Error', 'Failed to update task.');
     }
   };
 
@@ -183,10 +216,10 @@ const unsubscribe = onValue(tasksRef, (snapshot) => {
         lastEdited:new Date().toLocaleString(),
         editedBy: creatorEmail });
 
-      Alert.alert('Success', 'Task updated successfully!');
       setTaskTitle('');
       setTaskBody('');
       setAssignedTo('');
+      setSelectedEmail('')
       setTaskModalVisible(false);
       sendNotification(assignedTo,taskTitle);
     } catch (error) {
@@ -228,7 +261,6 @@ const unsubscribe = onValue(tasksRef, (snapshot) => {
     
           if (response.ok) {
             const responseData = await response.json();
-            Alert.alert("Success", "Notification sent successfully!");
             console.log(responseData);
           } else {
             Alert.alert("Error", `Failed to send notification: ${response.status}`);
@@ -348,6 +380,8 @@ const unsubscribe = onValue(tasksRef, (snapshot) => {
       <TouchableOpacity style={styles.button} onPress={() => setModalVisible(true)}>
         <Text style={styles.buttonText}>Add Task</Text>
       </TouchableOpacity>
+      
+
         <Dropdown
                 style={styles.dropdown}
                 data={filterDropDown}
@@ -378,7 +412,7 @@ const unsubscribe = onValue(tasksRef, (snapshot) => {
     <View style={styles.modalContent}>
       <TouchableOpacity
         style={styles.closeButton}
-        onPress={() => {setModalVisible(false),setAssignedTo('');}}
+        onPress={() => {setModalVisible(false),setAssignedTo(''),setSelectedEmail('') ;}}
         hitSlop={{ top: 10, bottom: 100, left: 10, right: 10 }}
       >
         <Text style={styles.closeButtonText}>X</Text>
@@ -403,23 +437,18 @@ const unsubscribe = onValue(tasksRef, (snapshot) => {
         multiline
       />
       
-      <Text style={styles.text}>Select User</Text>
-      <FlatList
-        data={users}
-        keyExtractor={(item, index) => index.toString()}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.userItem}
-            onPress={() => setAssignedTo(item)} // Set the selected email as the assigned user
-          >
-            <Text style={styles.userEmail}>{item}</Text>
-                  <View style={styles.line} />
+      <Dropdown
+              style={[styles.dropdown,{width:'100%'}, {height: '8%'}]}
+              data={usersDropdown}
+              labelField="label"
+              valueField="value"
+              placeholder="Select an email"
+              value={selectedEmail}
+              onChange={(item) => setSelectedEmail(item.value)}
+            />
 
-          </TouchableOpacity>
-        )}
-      />
-      <Text style={[styles.text]}>Selected:</Text>
-      <Text style={[styles.text, { color: '#888' }]}>{assignedTo}</Text>
+      <Text style={[styles.text, { marginTop:10 }]}>Selected:</Text>
+      <Text style={[styles.text, { color: '#888' }]}>{selectedEmail}</Text>
       <TouchableOpacity style={styles.button} onPress={addTask}>
         <Text style={styles.buttonText}>Add Task</Text>
       </TouchableOpacity>
@@ -437,6 +466,7 @@ const unsubscribe = onValue(tasksRef, (snapshot) => {
     setTaskModalVisible(false);
     setTaskTitle('');
     setTaskBody('');
+    setSelectedEmail('');
     setMarkAsDoneText('Mark as Done'); 
   }}      
 >
@@ -449,7 +479,7 @@ const unsubscribe = onValue(tasksRef, (snapshot) => {
           setTaskTitle('');
           setTaskBody('');
           setAssignedTo('');
-          setDeleteText('Delete Task');
+          setSelectedEmail('');
           setMarkAsDoneText('Mark as Done');
         }}
         hitSlop={{ top: 10, bottom: 50, left: 50, right: 10 }}
@@ -473,21 +503,16 @@ const unsubscribe = onValue(tasksRef, (snapshot) => {
       />
 
       {/* User selection part in Edit Modal */}
-      <Text style={styles.text}>Select User</Text>
-      <FlatList
-        data={users}
-        keyExtractor={(item, index) => index.toString()}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.userItem}
-            onPress={() => setAssignedTo(item)} // Set the selected email as the assigned user
-          >
-            <Text style={styles.userEmail}>{item}</Text>
-            <View style={styles.line} />
-          </TouchableOpacity>
-        )}
-      />
-      <Text style={styles.text}>Selected:</Text>
+      <Dropdown
+              style={[styles.dropdown,{width:'100%'}]}
+              data={usersDropdown}
+              labelField="label"
+              valueField="value"
+              placeholder="Select an email"
+              value={selectedEmail}
+              onChange={(item) => setSelectedEmail(item.value)}
+            />
+      <Text style={[styles.text, { marginTop:10 }]}>Selected:</Text>
       <Text style={[styles.text, { color: '#888' }]}>{assignedTo}</Text>
 
 
